@@ -1,16 +1,13 @@
+import re
 from sentence_transformers import SentenceTransformer
 from app.database.chroma_client import get_collection
 
-
 MODEL_NAME = "all-MiniLM-L6-v2"
 
-
-model = SentenceTransformer(
-    MODEL_NAME
-)
+model = SentenceTransformer(MODEL_NAME)
 
 
-BAD_TITLE_WORDS = [
+BAD_WORDS = {
     "season",
     "movie",
     "special",
@@ -18,209 +15,225 @@ BAD_TITLE_WORDS = [
     "ona",
     "recap",
     "chronicle",
-    "collab",
-    "trailer",
-    "pv",
     "promotion",
+    "pv",
+    "collab",
     "short",
-    "summary"
-]
+    "summary",
+    "preview"
+}
 
 
-def is_bad_recommendation(title: str):
-
+def is_bad_title(title: str) -> bool:
     title = title.lower()
-
-    for word in BAD_TITLE_WORDS:
-        if word in title:
-            return True
-
-    return False
+    return any(word in title for word in BAD_WORDS)
 
 
-
-def retrieve_anime(
-        query: str,
-        top_k: int = 8,
-        recommendation=False
-):
-
+def search(query: str, top_k: int = 20):
 
     collection = get_collection()
 
-
-
-    if recommendation:
-
-        search_query = f"""
-
-Find anime recommendations for this user request:
-
-{query}
-
-
-Do NOT find the exact same anime.
-
-Instead find anime with similar:
-
-- story themes
-- emotional impact
-- atmosphere
-- character development
-- conflicts
-- audience
-
-
-Prioritize:
-
-- dark fantasy
-- psychological thriller
-- military conflict
-- survival
-- war
-- strategy
-- morally complex characters
-- serious storytelling
-
-
-Return standalone anime.
-Avoid:
-- sequels
-- movies
-- specials
-- recap episodes
-- promotional content
-
-"""
-
-
-    else:
-
-        search_query = query
-
-
-
     embedding = model.encode(
-        search_query,
+        query,
         normalize_embeddings=True
     )
 
-
-
-    # retrieve more because we will filter
     results = collection.query(
-
-        query_embeddings=[
-            embedding.tolist()
-        ],
-
-        n_results=50
-
+        query_embeddings=[embedding.tolist()],
+        n_results=top_k
     )
 
-
-
-    anime_results = []
-
-
-
-    documents = results["documents"][0]
-    metadatas = results["metadatas"][0]
-    distances = results["distances"][0]
-
-
+    anime = []
 
     for metadata, distance in zip(
-        metadatas,
-        distances
+        results["metadatas"][0],
+        results["distances"][0]
     ):
 
-
-        title = metadata.get(
-            "title",
-            "Unknown"
-        )
-
-
-
-        similarity = round(
-            1 - distance,
-            3
-        )
-
-
-
-        # Remove weak matches
-        if similarity < 0.35:
-            continue
-
-
-
-        # Remove bad recommendation results
-        if recommendation and is_bad_recommendation(title):
-            continue
-
-
-
-        score = metadata.get(
-            "score",
-            0
-        )
-
-
         try:
-            score = float(score)
-
+            score = float(metadata.get("score", 0))
         except:
             score = 0
 
+        anime.append({
+
+            "title": metadata.get("title", ""),
+
+            "genre": metadata.get("genre", ""),
+
+            "score": score,
+
+            "synopsis": metadata.get("synopsis", ""),
+
+            "similarity": round(
+                1 - distance,
+                3
+            )
+
+        })
+
+    return anime
 
 
-        anime_results.append(
+# ----------------------------------------------------
+# INFORMATION RETRIEVAL
+# ----------------------------------------------------
 
-            {
+def retrieve_information(query: str):
 
-                "title": title,
+    candidates = search(
+        query,
+        top_k=15
+    )
 
+    query_lower = query.lower()
 
-                "genre": metadata.get(
-                    "genre",
-                    ""
-                ),
+    exact = []
+    others = []
 
+    for anime in candidates:
 
-                "score": score,
+        title = anime["title"].lower()
 
+        if title == query_lower:
+            exact.append(anime)
 
-                "synopsis": metadata.get(
-                    "synopsis",
-                    ""
-                ),
+        elif query_lower in title:
+            exact.append(anime)
 
+        else:
+            others.append(anime)
 
-                "similarity": similarity,
-
-
-                # ranking score
-                "ranking_score": (
-                    similarity * 0.8
-                    +
-                    (score / 10) * 0.2
-                )
-
-            }
-
-        )
-
-
-
-    # Better ranking:
-    # similarity + popularity/quality
-
-    anime_results.sort(
-        key=lambda x: x["ranking_score"],
+    others.sort(
+        key=lambda x: (
+            x["similarity"],
+            x["score"]
+        ),
         reverse=True
     )
 
+    return (exact + others)[:5]
 
-    return anime_results[:8]
+
+# ----------------------------------------------------
+# RECOMMENDATION
+# ----------------------------------------------------
+
+def extract_reference_title(query: str):
+
+    query = query.lower()
+
+    patterns = [
+
+        r"like (.+)",
+
+        r"similar to (.+)",
+
+        r"after (.+)",
+
+        r"after watching (.+)",
+
+        r"recommend anime like (.+)",
+
+        r"anime similar to (.+)"
+
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            query
+        )
+
+        if match:
+            return match.group(1).strip()
+
+    return query
+
+
+def retrieve_recommendations(query: str):
+
+    reference = extract_reference_title(query)
+
+    original = retrieve_information(reference)
+
+    if len(original) == 0:
+        return []
+
+    original = original[0]
+
+    similarity_query = f"""
+Genre:
+{original['genre']}
+
+Synopsis:
+{original['synopsis']}
+
+Recommend anime with similar:
+
+- themes
+- atmosphere
+- pacing
+- storytelling
+- emotional impact
+- character development
+"""
+
+    candidates = search(
+        similarity_query,
+        top_k=50
+    )
+
+    recommendations = []
+
+    seen = set()
+
+    original_title = original["title"].lower()
+
+    original_words = set(
+        original_title.split()
+    )
+
+    for anime in candidates:
+
+        title = anime["title"]
+
+        title_lower = title.lower()
+
+        if title_lower == original_title:
+            continue
+
+        if is_bad_title(title):
+            continue
+
+        words = set(title_lower.split())
+
+        if len(
+            words.intersection(original_words)
+        ) >= 2:
+            continue
+
+        if title_lower in seen:
+            continue
+
+        seen.add(title_lower)
+
+        anime["ranking"] = (
+
+            anime["similarity"] * 0.75
+
+            +
+
+            (anime["score"] / 10) * 0.25
+
+        )
+
+        recommendations.append(anime)
+
+    recommendations.sort(
+        key=lambda x: x["ranking"],
+        reverse=True
+    )
+
+    return recommendations[:8]

@@ -1,30 +1,58 @@
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.local
+.env.production
+
+# ==========================
 # Python
+# ==========================
+.venv/
+venv/
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
 
-# Virtual Environment
-.venv/
-venv/
+# ==========================
+# Chroma Database
+# ==========================
+data/chroma/
+data/embeddings/
 
-# Environment variables
-.env
+# Raw datasets (optional)
+data/raw/
+data/processed/
 
+# ==========================
+# Next.js
+# ==========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# ==========================
 # IDE
+# ==========================
 .idea/
 .vscode/
 
-# OS
+# ==========================
+# Operating System
+# ==========================
 .DS_Store
 Thumbs.db
 
-# Python cache
-.pytest_cache/
-.mypy_cache/
-
-# Build
-build/
-dist/
-
+# ==========================
 # Logs
+# ==========================
 *.log
+
+# ==========================
+# Temporary Files
+# ==========================
+*.tmp
+*.bak

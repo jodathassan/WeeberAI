@@ -1,26 +1,87 @@
-import os
-from google import genai
-from google.genai.errors import ServerError, ClientError
-from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-
-load_dotenv()
-
-client = genai.Client(
-    api_key=os.getenv("GOOGLE_API_KEY")
+from google.genai.errors import (
+    ClientError,
+    ServerError,
 )
 
-# Catch both 503 (Server Overload) and 429 (Rate Limit / Quota Exceeded)
-@retry(
-    stop=stop_after_attempt(5),
-    wait=wait_exponential(multiplier=2, min=4, max=60),
-    retry=retry_if_exception_type((ServerError, ClientError)),
-    reraise=True
+from app.services.gemini_service import (
+    generate_gemini_answer,
 )
+
+from app.services.ollama_service import (
+    generate_ollama_answer,
+)
+
+
 def generate_answer(prompt: str):
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",  # Higher daily quota (250 RPD vs 20 RPD)
-        contents=prompt
-    )
+    """
+    Generate an answer using Gemini.
+    Automatically falls back to Ollama if Gemini fails.
 
-    return response.text
+    Returns:
+        tuple[str, str]
+        (answer, model_used)
+    """
+
+    # -----------------------------
+    # Try Gemini
+    # -----------------------------
+
+    try:
+
+        print("=" * 50)
+        print("Using Gemini...")
+        print("=" * 50)
+
+        answer = generate_gemini_answer(
+            prompt
+        )
+
+        return answer, "Gemini"
+
+    # -----------------------------
+    # Gemini API errors
+    # -----------------------------
+
+    except (ClientError, ServerError) as e:
+
+        print("=" * 50)
+        print("Gemini failed.")
+        print(e)
+        print("Switching to Ollama...")
+        print("=" * 50)
+
+    # -----------------------------
+    # Unexpected errors
+    # -----------------------------
+
+    except Exception as e:
+
+        print("=" * 50)
+        print("Unexpected Gemini error.")
+        print(e)
+        print("Switching to Ollama...")
+        print("=" * 50)
+
+    # -----------------------------
+    # Ollama fallback
+    # -----------------------------
+
+    try:
+
+        answer = generate_ollama_answer(
+            prompt
+        )
+
+        return answer, "Ollama"
+
+    except Exception as e:
+
+        print("=" * 50)
+        print("Ollama also failed.")
+        print(e)
+        print("=" * 50)
+
+        return (
+            "Sorry, both Gemini and the local model are currently unavailable.",
+            "None",
+        )
