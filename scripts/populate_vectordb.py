@@ -6,22 +6,19 @@ from app.database.chroma_client import get_collection
 
 BATCH_SIZE = 500
 
+
 def main():
 
     BASE_DIR = Path(__file__).resolve().parent.parent
 
+    # Enabled allow_pickle=True to prevent NumPy load errors on Railway
     embeddings = np.load(
-        BASE_DIR /
-        "data" /
-        "embeddings" /
-        "embeddings.npy"
+        BASE_DIR / "data" / "embeddings" / "embeddings.npy",
+        allow_pickle=True
     )
 
     metadata = pd.read_parquet(
-        BASE_DIR /
-        "data" /
-        "embeddings" /
-        "metadata.parquet"
+        BASE_DIR / "data" / "embeddings" / "metadata.parquet"
     )
 
     collection = get_collection()
@@ -94,6 +91,7 @@ def main():
     print(
         f"Total anime: {collection.count()}"
     )
+
 
 if __name__ == "__main__":
     main()
