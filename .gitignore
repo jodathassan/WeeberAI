@@ -21,7 +21,6 @@ __pycache__/
 # Chroma Database
 # ==========================
 data/chroma/
-data/embeddings/
 
 # Raw datasets (optional)
 data/raw/
