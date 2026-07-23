@@ -61,3 +61,4 @@ Thumbs.db
 # Chroma backup
 # ==========================
 data/chroma_backup/
+data/chroma/

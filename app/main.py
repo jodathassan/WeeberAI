@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
+from app.database.chroma_client import get_collection
 
 
 app = FastAPI(
@@ -24,6 +25,25 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+
+@app.on_event("startup")
+def startup_event():
+    """
+    Runs automatically when the FastAPI server starts.
+    If ChromaDB is empty on Railway, it populates the vector database.
+    """
+    try:
+        collection = get_collection()
+        if collection.count() == 0:
+            print("Vector database is empty! Populating ChromaDB on startup...")
+            from scripts.populate_vectordb import main as populate_db
+            populate_db()
+            print("Vector database populated successfully!")
+        else:
+            print(f"Vector database loaded with {collection.count()} items.")
+    except Exception as e:
+        print(f"Error during startup vector DB check: {e}")
 
 
 @app.get("/")
