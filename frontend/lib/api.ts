@@ -1,8 +1,13 @@
 import { ChatResponse, StreamMessage } from './types'
 
-// Safely format the API URL, ensuring https protocol and removing trailing slashes
-const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'https://weeberai-production.up.railway.app'
-const API_URL = (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).replace(/\/$/, '')
+// Clean up raw environment variable or fallback string
+let rawUrl = process.env.NEXT_PUBLIC_API_URL || 'https://weeberai-production.up.railway.app'
+
+// Remove duplicate "https://" or "http://" prefixes if present
+rawUrl = rawUrl.replace(/^(https?:\/\/)+/i, '')
+
+// Set clean API URL with a single https:// and no trailing slashes
+const API_URL = `https://${rawUrl.replace(/\/$/, '')}`
 
 export async function chatWithWeeber(query: string): Promise<ChatResponse> {
   try {
@@ -42,7 +47,6 @@ export async function* streamChat(query: string): AsyncGenerator<StreamMessage> 
 
     const data = await response.json()
 
-    // Simulate streaming the response
     if (data.answer) {
       yield {
         type: 'text',
