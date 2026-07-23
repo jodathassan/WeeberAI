@@ -1,15 +1,13 @@
 import { ChatResponse, StreamMessage } from './types'
 
-// Clean up raw environment variable or fallback string
-let rawUrl = process.env.NEXT_PUBLIC_API_URL || 'https://weeberai-production.up.railway.app'
-
-// Remove duplicate "https://" or "http://" prefixes if present
-rawUrl = rawUrl.replace(/^(https?:\/\/)+/i, '')
-
-// Set clean API URL with a single https:// and no trailing slashes
-const API_URL = `https://${rawUrl.replace(/\/$/, '')}`
+// Hardcode direct Railway endpoint to remove all Vercel variable issues
+const API_URL = 'https://weeberai-production.up.railway.app'
 
 export async function chatWithWeeber(query: string): Promise<ChatResponse> {
+  console.log('--- WEEBER API DEBUG ---')
+  console.log('Sending request to:', `${API_URL}/recommend`)
+  console.log('Payload:', { query })
+
   try {
     const response = await fetch(`${API_URL}/recommend`, {
       method: 'POST',
@@ -19,14 +17,19 @@ export async function chatWithWeeber(query: string): Promise<ChatResponse> {
       body: JSON.stringify({ query }),
     })
 
+    console.log('Response Status:', response.status, response.statusText)
+
     if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('Server returned error body:', errorText)
+      throw new Error(`API error (${response.status}): ${response.statusText}`)
     }
 
     const data = await response.json()
+    console.log('Response Data:', data)
     return data
   } catch (error) {
-    console.error('Chat error:', error)
+    console.error('Fetch caught error:', error)
     throw error
   }
 }
