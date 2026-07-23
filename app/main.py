@@ -14,7 +14,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",   # Next.js
+        "http://localhost:3000",          # Next.js local dev
+        "https://weeber-ai.vercel.app",   # Vercel production
+        "*"                               # Optional: Allows all origins for easy testing
     ],
     allow_credentials=True,
     allow_methods=["*"],
