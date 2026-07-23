@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import urllib.request
 import numpy as np
@@ -8,12 +7,12 @@ from app.database.chroma_client import get_collection
 
 BATCH_SIZE = 500
 
-# Direct link to download raw file from GitHub LFS media server
-RAW_EMBEDDINGS_URL = "https://media.githubusercontent.com/media/jodathassan/WeeberAI/main/data/embeddings/embeddings.npy"
+# Direct raw download URL for GitHub LFS file
+LFS_URL = "https://github.com/jodathassan/WeeberAI/raw/main/data/embeddings/embeddings.npy"
 
 
 def is_lfs_pointer(file_path: Path) -> bool:
-    """Check if file is a Git LFS pointer text file instead of actual binary data."""
+    """Check if file is missing or a Git LFS pointer text file."""
     if not file_path.exists():
         return True
     if file_path.stat().st_size < 2000:
@@ -30,22 +29,27 @@ def main():
     embeddings_file = BASE_DIR / "data" / "embeddings" / "embeddings.npy"
     metadata_file = BASE_DIR / "data" / "embeddings" / "metadata.parquet"
 
-    # 1. Auto-download if pointer or missing
+    # Auto-download binary directly if Railway pulled a 1 KB text pointer
     if is_lfs_pointer(embeddings_file):
-        print("Detected Git LFS pointer text file. Downloading raw binary embeddings...")
+        print("LFS pointer detected. Downloading full binary embeddings file...")
         embeddings_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Download real binary file directly
-        urllib.request.urlretrieve(RAW_EMBEDDINGS_URL, embeddings_file)
-        print("Download complete!")
+        req = urllib.request.Request(
+            LFS_URL,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        )
+        with urllib.request.urlopen(req) as response, open(embeddings_file, "wb") as out_file:
+            out_file.write(response.read())
 
-    # 2. Load Embeddings
+        print("Download finished!")
+
+    # Load Embeddings
     try:
         embeddings = np.load(embeddings_file)
     except Exception:
         embeddings = np.load(embeddings_file, allow_pickle=True)
 
-    # 3. Load Metadata
+    # Load Metadata
     metadata = pd.read_parquet(metadata_file)
 
     collection = get_collection()
