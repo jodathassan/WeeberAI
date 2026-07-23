@@ -8,18 +8,18 @@ from app.database.chroma_client import get_collection
 
 BATCH_SIZE = 500
 
-# Direct link to raw binary (if you upload to GitHub Releases or Hugging Face)
-# For now, this script checks if the file is an LFS pointer and handles it.
+# Direct link to download raw file from GitHub LFS media server
+RAW_EMBEDDINGS_URL = "https://media.githubusercontent.com/media/jodathassan/WeeberAI/main/data/embeddings/embeddings.npy"
+
 
 def is_lfs_pointer(file_path: Path) -> bool:
-    """Check if the file is a Git LFS pointer text file instead of real binary data."""
+    """Check if file is a Git LFS pointer text file instead of actual binary data."""
     if not file_path.exists():
-        return False
-    if file_path.stat().st_size < 2000:  # LFS pointers are ~100-200 bytes
+        return True
+    if file_path.stat().st_size < 2000:
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-                return "version https://git-lfs.github.com/spec/v1" in content
+                return "version https://git-lfs.github.com/spec/v1" in f.read()
         except Exception:
             return False
     return False
@@ -30,21 +30,20 @@ def main():
     embeddings_file = BASE_DIR / "data" / "embeddings" / "embeddings.npy"
     metadata_file = BASE_DIR / "data" / "embeddings" / "metadata.parquet"
 
-    # 1. Check for Git LFS pointer issue
+    # 1. Auto-download if pointer or missing
     if is_lfs_pointer(embeddings_file):
-        raise RuntimeError(
-            f"'{embeddings_file.name}' is a Git LFS pointer text file (~1 KB) instead of binary data. "
-            "Railway did not pull the LFS object during build."
-        )
+        print("Detected Git LFS pointer text file. Downloading raw binary embeddings...")
+        embeddings_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Download real binary file directly
+        urllib.request.urlretrieve(RAW_EMBEDDINGS_URL, embeddings_file)
+        print("Download complete!")
 
     # 2. Load Embeddings
     try:
         embeddings = np.load(embeddings_file)
     except Exception:
-        try:
-            embeddings = np.load(embeddings_file, allow_pickle=True)
-        except Exception as err:
-            raise RuntimeError(f"Failed to load numpy embeddings: {err}")
+        embeddings = np.load(embeddings_file, allow_pickle=True)
 
     # 3. Load Metadata
     metadata = pd.read_parquet(metadata_file)
