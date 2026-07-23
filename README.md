@@ -1,56 +1,96 @@
-# Weeber - AI Anime Recommendation System
+# Weeber - AI Anime Assistant
 
-Weeber is a full-stack AI-powered anime recommendation system that combines **Retrieval-Augmented Generation (RAG)** with a **Large Language Model (Google Gemini)** to provide intelligent anime recommendations and answer anime-related questions.
+Weeber is a full-stack AI-powered anime assistant that uses **Retrieval-Augmented Generation (RAG)** and **Large Language Models (LLMs)** to answer anime-related questions, provide recommendations, and have natural conversations about anime.
 
-Unlike traditional recommendation systems, Weeber retrieves semantically relevant anime using vector search and then uses an LLM to generate natural, context-aware responses.
+Unlike traditional anime recommendation systems, Weeber does not rely on a custom-trained recommendation model. Instead, it combines **semantic search, vector databases, and LLM reasoning** to retrieve relevant anime information and generate intelligent, context-aware responses.
 
 ---
 
-## Features
+# Features
 
-### AI Chatbot
+## AI Anime Chatbot
 
 - Conversational anime assistant
 - Natural language understanding
-- Recommendation mode
-- Information mode
+- Answers anime-related questions
+- Provides personalized anime recommendations
+- Explains anime plots, genres, studios, and details
+- Supports recommendation and information queries
 
-### Retrieval-Augmented Generation (RAG)
+---
 
-- Sentence Transformers embeddings
+## Retrieval-Augmented Generation (RAG)
+
+Weeber uses a RAG pipeline to improve response quality:
+
+- Sentence Transformer embeddings
 - ChromaDB vector database
 - Semantic similarity search
+- Context retrieval from anime knowledge base
+- LLM-powered response generation
+
+The system retrieves relevant anime information from the vector database and provides that context to the LLM before generating a response.
+
+---
+
+## Intelligent Query Processing
+
+- Detects user intent:
+  - Recommendation queries
+  - Information queries
+- Retrieves relevant anime using vector similarity
+- Removes duplicate results
+- Filters irrelevant entries:
+  - Sequels
+  - OVAs
+  - Movies
+  - Specials
+- Generates natural conversational responses
+
+---
+
+## LLM Integration
+
+- Google Gemini API
 - Context-aware prompting
+- Hallucination-reduced responses
+- Ollama support ready for local LLM deployment
 
-### Intelligent Recommendation Engine
+---
 
-- Detects recommendation intent
-- Detects information queries
-- Removes duplicate recommendations
-- Filters sequels, OVAs, movies and specials
-- Ranking based on similarity
+# System Architecture
 
-### LLM Integration
+Weeber follows a Retrieval-Augmented Generation architecture:
 
-- Google Gemini
-- Automatic fallback support (Ollama ready)
-- Hallucination-reduced prompting
+```
+                 User Query
+                     |
+                     v
+             Next.js Frontend
+                     |
+                     v
+              FastAPI Backend
+                     |
+                     v
+             Intent Detection
+                     |
+                     v
+        Sentence Transformer Embeddings
+                     |
+                     v
+             ChromaDB Vector Search
+                     |
+                     v
+          Retrieved Anime Information
+                     |
+                     v
+              Google Gemini LLM
+                     |
+                     v
+              Final AI Response
+```
 
-### Frontend
-
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS
-- Framer Motion animations
-- Modern ChatGPT-inspired interface
-
-### Backend
-
-- FastAPI
-- Pydantic
-- REST API
-- Modular architecture
+The retrieval layer provides relevant anime knowledge to the LLM, allowing Weeber to generate more accurate and meaningful responses.
 
 ---
 
@@ -58,21 +98,30 @@ Unlike traditional recommendation systems, Weeber retrieves semantically relevan
 
 ## Frontend
 
-- Next.js
-- React
+- Next.js 16
+- React 19
 - TypeScript
 - Tailwind CSS
 - Framer Motion
 
+---
+
 ## Backend
 
 - FastAPI
+- Python
 - Pydantic
+- REST API
 
-## AI
+---
 
-- Google Gemini
+## AI / Machine Learning
+
+- Google Gemini API
+- Retrieval-Augmented Generation (RAG)
 - Sentence Transformers
+- Text Embeddings
+- Vector Similarity Search
 - ChromaDB
 
 ---
@@ -80,13 +129,20 @@ Unlike traditional recommendation systems, Weeber retrieves semantically relevan
 # Project Structure
 
 ```
-AnimeRecommendation(LLM + RAG)
-
+Weeber
 │
 ├── app/
 │   ├── api/
+│   │   └── routes.py
+│   │
 │   ├── database/
+│   │   └── chroma_client.py
+│   │
 │   ├── services/
+│   │   ├── recommendation_service.py
+│   │   ├── retrieval_service.py
+│   │   └── llm_service.py
+│   │
 │   └── main.py
 │
 ├── frontend/
@@ -96,10 +152,10 @@ AnimeRecommendation(LLM + RAG)
 │   └── public/
 │
 ├── data/
+│   ├── chroma/
+│   └── embeddings/
 │
 ├── scripts/
-│
-├── tests/
 │
 ├── requirements.txt
 └── README.md
@@ -107,93 +163,125 @@ AnimeRecommendation(LLM + RAG)
 
 ---
 
+# Dataset
+
+Weeber uses anime metadata containing:
+
+- Anime titles
+- English titles
+- Genres
+- Studios
+- Episodes
+- Ratings
+- Synopsis
+
+The data is converted into vector embeddings and stored in ChromaDB for semantic retrieval.
+
+---
+
 # Installation
 
-## Clone the repository
+## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/weeber.git
+git clone https://github.com/jodathassan/WeeberAI.git
 
-cd weeber
+cd WeeberAI
 ```
 
 ---
 
-## Backend
+# Backend Setup
 
-Create a virtual environment
+## Create Virtual Environment
 
 ```bash
 python -m venv .venv
 ```
 
-Activate it
+Activate environment:
 
-Windows
+### Windows
 
 ```bash
 .venv\Scripts\activate
 ```
 
-Install dependencies
+---
+
+## Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create a `.env`
+---
+
+## Environment Variables
+
+Create a `.env` file:
 
 ```env
 GOOGLE_API_KEY=YOUR_API_KEY
 ```
 
-Run FastAPI
+Never commit API keys or environment files to GitHub.
+
+---
+
+## Run Backend
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Backend runs on
+Backend:
 
 ```
 http://localhost:8000
 ```
 
+Swagger Documentation:
+
+```
+http://localhost:8000/docs
+```
+
 ---
 
-## Frontend
+# Frontend Setup
 
-Move into frontend
+Move into frontend:
 
 ```bash
 cd frontend
 ```
 
-Install packages
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Create
+Create:
 
 ```
 frontend/.env.local
 ```
 
-Add
+Add:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-Run
+Run:
 
 ```bash
 npm run dev
 ```
 
-Frontend
+Frontend:
 
 ```
 http://localhost:3000
@@ -201,19 +289,38 @@ http://localhost:3000
 
 ---
 
-# API Endpoint
+# API Documentation
 
-POST
+## Chat Endpoint
+
+### POST
 
 ```
 /recommend
 ```
 
-Request
+Request:
 
 ```json
 {
-  "query": "Recommend anime like Death Note"
+  "query": "Recommend anime like Attack on Titan"
+}
+```
+
+Response:
+
+```json
+{
+  "intent": "recommendation",
+  "model": "gemini",
+  "answer": "You may enjoy Vinland Saga and Code Geass...",
+  "sources": [
+    {
+      "title": "Vinland Saga",
+      "genre": "Action, Adventure",
+      "score": 8.7
+    }
+  ]
 }
 ```
 
@@ -221,12 +328,61 @@ Request
 
 # Example Queries
 
-- Recommend anime like Naruto
-- Best psychological anime
-- Recommend dark fantasy anime
-- What is One Piece about?
-- Recommend romance anime
-- Explain Attack on Titan
+Ask Weeber:
+
+```
+Recommend anime like Attack on Titan
+```
+
+```
+Explain Death Note
+```
+
+```
+Best psychological anime
+```
+
+```
+Recommend romance anime
+```
+
+```
+What is One Piece about?
+```
+
+```
+Suggest dark fantasy anime
+```
+
+---
+
+# Deployment
+
+## Backend
+
+Deployed using:
+
+- Railway
+
+## Frontend
+
+Deployed using:
+
+- Vercel
+
+Environment variables:
+
+Backend:
+
+```env
+GOOGLE_API_KEY=your_key
+```
+
+Frontend:
+
+```env
+NEXT_PUBLIC_API_URL=backend_url
+```
 
 ---
 
@@ -235,11 +391,12 @@ Request
 - User accounts
 - Chat history
 - Streaming responses
-- Anime posters
-- MAL integration
-- Personalized recommendations
-- Hybrid retrieval
-- Deployment on Render + Vercel
+- Anime posters and images
+- MyAnimeList integration
+- Personalized user preferences
+- Hybrid retrieval system
+- Voice-based anime assistant
+- Multi-language support
 
 ---
 
@@ -250,4 +407,5 @@ Request
 BS Software Engineering
 
 GitHub:
+
 https://github.com/jodathassan
