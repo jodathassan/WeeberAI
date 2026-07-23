@@ -1,6 +1,8 @@
 import { ChatResponse, StreamMessage } from './types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Safely format the API URL, ensuring https protocol and removing trailing slashes
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'https://weeberai-production.up.railway.app'
+const API_URL = (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).replace(/\/$/, '')
 
 export async function chatWithWeeber(query: string): Promise<ChatResponse> {
   try {
