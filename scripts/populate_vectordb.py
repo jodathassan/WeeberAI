@@ -10,12 +10,20 @@ BATCH_SIZE = 500
 def main():
 
     BASE_DIR = Path(__file__).resolve().parent.parent
+    embeddings_file = BASE_DIR / "data" / "embeddings" / "embeddings.npy"
 
-    # Enabled allow_pickle=True to prevent NumPy load errors on Railway
-    embeddings = np.load(
-        BASE_DIR / "data" / "embeddings" / "embeddings.npy",
-        allow_pickle=True
-    )
+    # Robust loading to handle standard binary vs pickle formats safely
+    try:
+        embeddings = np.load(embeddings_file)
+    except Exception:
+        try:
+            embeddings = np.load(embeddings_file, allow_pickle=True)
+        except Exception as err:
+            raise RuntimeError(
+                f"Could not load {embeddings_file.name}. "
+                "If using Git LFS, ensure the binary file was pushed to GitHub and not just a text pointer. "
+                f"Original error: {err}"
+            )
 
     metadata = pd.read_parquet(
         BASE_DIR / "data" / "embeddings" / "metadata.parquet"
