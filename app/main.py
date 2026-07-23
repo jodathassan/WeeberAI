@@ -15,9 +15,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",          # Next.js local dev
-        "https://weeber-ai.vercel.app",   # Vercel production
-        "*"                               # Optional: Allows all origins for easy testing
+        "http://localhost:3000",
+        "https://weeber-ai.vercel.app",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -29,21 +29,29 @@ app.include_router(router)
 
 @app.on_event("startup")
 def startup_event():
-    """
-    Runs automatically when the FastAPI server starts.
-    If ChromaDB is empty on Railway, it populates the vector database.
-    """
     try:
         collection = get_collection()
-        if collection.count() == 0:
-            print("Vector database is empty! Populating ChromaDB on startup...")
-            from scripts.populate_vectordb import main as populate_db
-            populate_db()
-            print("Vector database populated successfully!")
-        else:
-            print(f"Vector database loaded with {collection.count()} items.")
+        print(f"Current collection count: {collection.count()}")
     except Exception as e:
         print(f"Error during startup vector DB check: {e}")
+
+
+@app.get("/seed")
+def seed_database():
+    """Manually trigger vector database population and see exact logs/errors."""
+    try:
+        from scripts.populate_vectordb import main as populate_db
+        populate_db()
+        collection = get_collection()
+        return {
+            "status": "success",
+            "message": f"Database populated successfully! Total items: {collection.count()}"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "detail": str(e)
+        }
 
 
 @app.get("/")
